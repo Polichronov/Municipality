@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'screens/public_transport_screen.dart';
+import 'screens/attractions_screen.dart';
+import 'screens/events_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -23,13 +26,16 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(),
+      appBar: AppBar(
+        title: const Text('ОБЩИНА СТАРА ЗАГОРА'),
+        centerTitle: true,
+      ),
       body: Column(
         children: [
           Expanded(
             flex: 1,
             child: Image.asset(
-              'assets/top_image.jpg', // Corrected file name
+              'assets/images/top_image.jpg', 
               fit: BoxFit.cover,
               width: double.infinity,
             ),
@@ -45,10 +51,11 @@ class HomeScreen extends StatelessWidget {
                 crossAxisSpacing: 16,
                 mainAxisSpacing: 32,
                 children: [
-                  _buildImageTile(context, 'assets/image1.jpg', 'Screen 1', Screen1()),
-                  _buildImageTile(context, 'assets/image2.jpg', 'Screen 2', Screen2()),
-                  _buildImageTile(context, 'assets/image3.jpg', 'Screen 3', Screen3()),
-                  _buildImageTile(context, 'assets/image4.jpg', 'Screen 4', Screen4()),
+                  _buildImageTile(context, 'assets/images/image1.jpg', 'Сигнали', Screen1()),
+                  _buildImageTile(context, 'assets/images/image2.jpg', 'Паркиране', Screen2()),
+                  _buildImageTile(context, 'assets/images/image3.jpg', 'Градски транспорт', PublicTransportScreen()),
+                  _buildImageTile(context, 'assets/images/image4.jpg', 'Събития', EventsScreen()),
+                  _buildImageTile(context, 'assets/images/neolithic-dwellings-in-situ-museum-stara-zagora-00.jpg', 'Забележителности', AttractionsScreen()),
                 ],
               ),
             ),
@@ -84,6 +91,14 @@ class HomeScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 8),
+                Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
               ],
             ),
           ),
