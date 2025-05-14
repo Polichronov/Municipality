@@ -45,5 +45,11 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Това приложение има нужда от достъп до вашето местоположение, за да покаже позицията ви на картата и да помогне с навигацията.</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>Това приложение има нужда от достъп до вашето местоположение, за да покаже позицията ви на картата и да помогне с навигацията.</string>
+	<key>io.flutter.embedded_views_preview</key>
+	<true/>
 </dict>
 </plist>

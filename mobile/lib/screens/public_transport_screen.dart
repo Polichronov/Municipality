@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'map_screen.dart';
 
 class PublicTransportScreen extends StatefulWidget {
   const PublicTransportScreen({super.key});
@@ -22,10 +23,35 @@ class _PublicTransportScreenState extends State<PublicTransportScreen> with Sing
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _tabController.addListener(_handleTabSelection);
+  }
+
+  void _handleTabSelection() {
+    if (_tabController.indexIsChanging) {
+      return;
+    }
+    
+    if (_tabController.index == 2) {
+      // Когато избираме таб "Карта", отваряме директно MapScreen
+      Future.microtask(() {
+        Navigator.push(
+          context, 
+          MaterialPageRoute(
+            builder: (context) => const MapScreen(),
+          ),
+        ).then((_) {
+          // Когато потребителят се връща от картата, връщаме таб индекса на автобуси
+          if (mounted) {
+            _tabController.animateTo(0);
+          }
+        });
+      });
+    }
   }
 
   @override
   void dispose() {
+    _tabController.removeListener(_handleTabSelection);
     _tabController.dispose();
     super.dispose();
   }
@@ -49,7 +75,20 @@ class _PublicTransportScreenState extends State<PublicTransportScreen> with Sing
         children: [
           _buildBusTab(),
           _buildTrolleyTab(),
-          _buildMapTab(),
+          _buildMapPlaceholder(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMapPlaceholder() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const CircularProgressIndicator(),
+          const SizedBox(height: 16),
+          const Text('Зареждане на картата...'),
         ],
       ),
     );
@@ -102,42 +141,6 @@ class _PublicTransportScreenState extends State<PublicTransportScreen> with Sing
           Icons.electric_rickshaw,
           Colors.green,
           () => _showScheduleDialog('Тролей 2 - Автогара - Болница'),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildMapTab() {
-    return Stack(
-      children: [
-        Container(
-          color: Colors.grey[200],
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.map, size: 100, color: Colors.grey[400]),
-                const SizedBox(height: 16),
-                const Text(
-                  'Карта на градския транспорт',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Показва всички линии и спирки в града',
-                  style: TextStyle(color: Colors.grey),
-                ),
-              ],
-            ),
-          ),
-        ),
-        Positioned(
-          bottom: 20,
-          right: 20,
-          child: FloatingActionButton(
-            onPressed: () {},
-            child: const Icon(Icons.my_location),
-          ),
         ),
       ],
     );
