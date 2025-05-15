@@ -3,6 +3,7 @@ import 'screens/public_transport_screen.dart';
 import 'screens/attractions_screen.dart';
 import 'screens/events_screen.dart';
 import 'screens/signals_screen.dart';
+import 'screens/parking_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -53,7 +54,7 @@ class HomeScreen extends StatelessWidget {
                 mainAxisSpacing: 32,
                 children: [
                   _buildImageTile(context, 'assets/images/image1.jpg', 'Сигнали', SignalsScreen()),
-                  _buildImageTile(context, 'assets/images/image2.jpg', 'Паркиране', Screen2()),
+                  _buildImageTile(context, 'assets/images/image2.jpg', 'Зелена зона', ParkingScreen()),
                   _buildImageTile(context, 'assets/images/image3.jpg', 'Градски транспорт', PublicTransportScreen()),
                   _buildImageTile(context, 'assets/images/image4.jpg', 'Събития', EventsScreen()),
                   _buildImageTile(context, 'assets/images/neolithic-dwellings-in-situ-museum-stara-zagora-00.jpg', 'Забележителности', AttractionsScreen()),
