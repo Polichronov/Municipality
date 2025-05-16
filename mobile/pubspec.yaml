@@ -73,6 +73,10 @@ flutter:
     - assets/images/neolithic-dwellings-in-situ-museum-stara-zagora-00.jpg
     - assets/images/stara_zagora_emblem.png
     - assets/images/green_zone.jpg
+    - assets/images/info_image.jpg
+    - assets/images/stara_zagora_map.jpg
+    - assets/images/welcome_image.jpg
+    - assets/images/announcements_image.jpg
   # To add assets to your application, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg

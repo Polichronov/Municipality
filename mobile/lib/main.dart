@@ -4,6 +4,7 @@ import 'screens/attractions_screen.dart';
 import 'screens/events_screen.dart';
 import 'screens/signals_screen.dart';
 import 'screens/parking_screen.dart';
+import 'screens/information_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -29,8 +30,43 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('ОБЩИНА СТАРА ЗАГОРА'),
+        backgroundColor: const Color(0xFF006C35), // Dark green color
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(right: 10.0),
+              child: Image.asset(
+                'assets/images/stara_zagora_emblem.png',
+                height: 40,
+              ),
+            ),
+            const Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'ДОБРЕ ДОШЛИ В', 
+                  style: TextStyle(
+                    fontSize: 14, 
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white,
+                  ),
+                ),
+                Text(
+                  'ОБЩИНА СТАРА ЗАГОРА', 
+                  style: TextStyle(
+                    fontSize: 16, 
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
         centerTitle: true,
+        elevation: 4,
       ),
       body: Column(
         children: [
@@ -57,7 +93,8 @@ class HomeScreen extends StatelessWidget {
                   _buildImageTile(context, 'assets/images/image2.jpg', 'Зелена зона', ParkingScreen()),
                   _buildImageTile(context, 'assets/images/image3.jpg', 'Градски транспорт', PublicTransportScreen()),
                   _buildImageTile(context, 'assets/images/image4.jpg', 'Събития', EventsScreen()),
-                  _buildImageTile(context, 'assets/images/neolithic-dwellings-in-situ-museum-stara-zagora-00.jpg', 'Забележителности', AttractionsScreen()),
+                  _buildImageTile(context, 'assets/images/neolithic-dwellings-in-situ-museum-stara-zagora-00.jpg', 'Култура и туризъм', AttractionsScreen()),
+                  _buildImageTile(context, 'assets/images/announcements_image.jpg', 'Информация и услуги', InformationScreen()),
                 ],
               ),
             ),
