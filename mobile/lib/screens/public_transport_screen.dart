@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'map_screen.dart';
 
 class PublicTransportScreen extends StatefulWidget {
   const PublicTransportScreen({super.key});
@@ -9,6 +10,14 @@ class PublicTransportScreen extends StatefulWidget {
 
 class _PublicTransportScreenState extends State<PublicTransportScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  
+  // Search-related variables
+  final TextEditingController _busSearchController = TextEditingController();
+  final TextEditingController _trolleySearchController = TextEditingController();
+  bool _isBusSearching = false;
+  bool _isTrolleySearching = false;
+
+  // Routes data
   final List<String> busRoutes = [
     'Линия 1 - Железник - СБА',
     'Линия 2 - Автогара - Болница',
@@ -18,15 +27,47 @@ class _PublicTransportScreenState extends State<PublicTransportScreen> with Sing
     'Линия 15 - Център - Кольо Ганчев'
   ];
 
+  final List<String> trolleyRoutes = [
+    'Тролей 1 - Железник - СБА',
+    'Тролей 2 - Автогара - Болница',
+  ];
+
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _tabController.addListener(_handleTabSelection);
+  }
+
+  void _handleTabSelection() {
+    if (_tabController.indexIsChanging) {
+      return;
+    }
+    
+    if (_tabController.index == 2) {
+      // Когато избираме таб "Карта", отваряме директно MapScreen
+      Future.microtask(() {
+        Navigator.push(
+          context, 
+          MaterialPageRoute(
+            builder: (context) => const MapScreen(),
+          ),
+        ).then((_) {
+          // Когато потребителят се връща от картата, връщаме таб индекса на автобуси
+          if (mounted) {
+            _tabController.animateTo(0);
+          }
+        });
+      });
+    }
   }
 
   @override
   void dispose() {
+    _tabController.removeListener(_handleTabSelection);
     _tabController.dispose();
+    _busSearchController.dispose();
+    _trolleySearchController.dispose();
     super.dispose();
   }
 
@@ -34,9 +75,22 @@ class _PublicTransportScreenState extends State<PublicTransportScreen> with Sing
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Градски транспорт'),
+        backgroundColor: const Color(0xFF006C35),
+        foregroundColor: Colors.white,
+        title: const Text(
+          'Градски транспорт',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        centerTitle: true,
+        elevation: 4,
         bottom: TabBar(
           controller: _tabController,
+          indicatorColor: Colors.white,
+          labelColor: Colors.white,
+          unselectedLabelColor: Colors.white70,
           tabs: const [
             Tab(icon: Icon(Icons.directions_bus), text: 'Автобуси'),
             Tab(icon: Icon(Icons.electric_rickshaw), text: 'Тролеи'),
@@ -49,7 +103,20 @@ class _PublicTransportScreenState extends State<PublicTransportScreen> with Sing
         children: [
           _buildBusTab(),
           _buildTrolleyTab(),
-          _buildMapTab(),
+          _buildMapPlaceholder(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMapPlaceholder() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const CircularProgressIndicator(),
+          const SizedBox(height: 16),
+          const Text('Зареждане на картата...'),
         ],
       ),
     );
@@ -61,85 +128,215 @@ class _PublicTransportScreenState extends State<PublicTransportScreen> with Sing
         Padding(
           padding: const EdgeInsets.all(16.0),
           child: TextField(
+            controller: _busSearchController,
             decoration: InputDecoration(
               hintText: 'Търси линия или спирка...',
-              prefixIcon: const Icon(Icons.search),
+              prefixIcon: const Icon(Icons.search, color: Color(0xFF006C35)),
+              suffixIcon: _busSearchController.text.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear),
+                      onPressed: () {
+                        _busSearchController.clear();
+                        setState(() {
+                          _isBusSearching = false;
+                        });
+                        FocusScope.of(context).unfocus();
+                      },
+                    )
+                  : null,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
-          ),
-        ),
-        Expanded(
-          child: ListView.builder(
-            itemCount: busRoutes.length,
-            itemBuilder: (context, index) {
-              return _buildRouteCard(
-                busRoutes[index],
-                Icons.directions_bus,
-                Colors.blue,
-                () => _showScheduleDialog(busRoutes[index]),
-              );
+            onTap: () {
+              setState(() {
+                _isBusSearching = true;
+              });
+            },
+            onChanged: (value) {
+              setState(() {
+                _isBusSearching = value.isNotEmpty;
+              });
+            },
+            onSubmitted: (value) {
+              if (value.isEmpty) {
+                setState(() {
+                  _isBusSearching = false;
+                });
+              }
             },
           ),
         ),
+        Expanded(
+          child: GestureDetector(
+            onTap: _hideSearch,
+            child: _isBusSearching
+                ? _buildBusSearchResults()
+                : ListView.builder(
+                    itemCount: busRoutes.length,
+                    itemBuilder: (context, index) {
+                      return _buildRouteCard(
+                        busRoutes[index],
+                        Icons.directions_bus,
+                        const Color(0xFF006C35),
+                        () => _showScheduleDialog(busRoutes[index]),
+                      );
+                    },
+                  ),
+          ),
+        ),
       ],
+    );
+  }
+
+  Widget _buildBusSearchResults() {
+    final String searchQuery = _busSearchController.text.toLowerCase();
+    final List<String> filteredRoutes = busRoutes
+        .where((route) => route.toLowerCase().contains(searchQuery))
+        .toList();
+
+    return ListView.builder(
+      itemCount: filteredRoutes.isEmpty ? 1 : filteredRoutes.length,
+      itemBuilder: (context, index) {
+        if (filteredRoutes.isEmpty) {
+          return const Padding(
+            padding: EdgeInsets.all(16.0),
+            child: Text(
+              'Няма намерени резултати',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey,
+              ),
+            ),
+          );
+        }
+        
+        return ListTile(
+          title: Text(filteredRoutes[index]),
+          leading: const Icon(Icons.directions_bus, color: Color(0xFF006C35)),
+          onTap: () {
+            _busSearchController.text = filteredRoutes[index];
+            setState(() {
+              _isBusSearching = false;
+            });
+            FocusScope.of(context).unfocus();
+            _showScheduleDialog(filteredRoutes[index]);
+          },
+        );
+      },
     );
   }
 
   Widget _buildTrolleyTab() {
-    return ListView(
-      padding: const EdgeInsets.all(16.0),
+    return Column(
       children: [
-        _buildRouteCard(
-          'Тролей 1 - Железник - СБА',
-          Icons.electric_rickshaw,
-          Colors.green,
-          () => _showScheduleDialog('Тролей 1 - Железник - СБА'),
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: TextField(
+            controller: _trolleySearchController,
+            decoration: InputDecoration(
+              hintText: 'Търси линия или спирка...',
+              prefixIcon: const Icon(Icons.search, color: Color(0xFF006C35)),
+              suffixIcon: _trolleySearchController.text.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear),
+                      onPressed: () {
+                        _trolleySearchController.clear();
+                        setState(() {
+                          _isTrolleySearching = false;
+                        });
+                        FocusScope.of(context).unfocus();
+                      },
+                    )
+                  : null,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            onTap: () {
+              setState(() {
+                _isTrolleySearching = true;
+              });
+            },
+            onChanged: (value) {
+              setState(() {
+                _isTrolleySearching = value.isNotEmpty;
+              });
+            },
+            onSubmitted: (value) {
+              if (value.isEmpty) {
+                setState(() {
+                  _isTrolleySearching = false;
+                });
+              }
+            },
+          ),
         ),
-        _buildRouteCard(
-          'Тролей 2 - Автогара - Болница',
-          Icons.electric_rickshaw,
-          Colors.green,
-          () => _showScheduleDialog('Тролей 2 - Автогара - Болница'),
+        Expanded(
+          child: GestureDetector(
+            onTap: _hideSearch,
+            child: _isTrolleySearching
+                ? _buildTrolleySearchResults()
+                : ListView(
+                    padding: const EdgeInsets.all(16.0),
+                    children: [
+                      _buildRouteCard(
+                        trolleyRoutes[0],
+                        Icons.electric_rickshaw,
+                        const Color(0xFF006C35),
+                        () => _showScheduleDialog(trolleyRoutes[0]),
+                      ),
+                      _buildRouteCard(
+                        trolleyRoutes[1],
+                        Icons.electric_rickshaw,
+                        const Color(0xFF006C35),
+                        () => _showScheduleDialog(trolleyRoutes[1]),
+                      ),
+                    ],
+                  ),
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildMapTab() {
-    return Stack(
-      children: [
-        Container(
-          color: Colors.grey[200],
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.map, size: 100, color: Colors.grey[400]),
-                const SizedBox(height: 16),
-                const Text(
-                  'Карта на градския транспорт',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Показва всички линии и спирки в града',
-                  style: TextStyle(color: Colors.grey),
-                ),
-              ],
+  Widget _buildTrolleySearchResults() {
+    final String searchQuery = _trolleySearchController.text.toLowerCase();
+    final List<String> filteredRoutes = trolleyRoutes
+        .where((route) => route.toLowerCase().contains(searchQuery))
+        .toList();
+
+    return ListView.builder(
+      itemCount: filteredRoutes.isEmpty ? 1 : filteredRoutes.length,
+      itemBuilder: (context, index) {
+        if (filteredRoutes.isEmpty) {
+          return const Padding(
+            padding: EdgeInsets.all(16.0),
+            child: Text(
+              'Няма намерени резултати',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey,
+              ),
             ),
-          ),
-        ),
-        Positioned(
-          bottom: 20,
-          right: 20,
-          child: FloatingActionButton(
-            onPressed: () {},
-            child: const Icon(Icons.my_location),
-          ),
-        ),
-      ],
+          );
+        }
+        
+        return ListTile(
+          title: Text(filteredRoutes[index]),
+          leading: const Icon(Icons.electric_rickshaw, color: Color(0xFF006C35)),
+          onTap: () {
+            _trolleySearchController.text = filteredRoutes[index];
+            setState(() {
+              _isTrolleySearching = false;
+            });
+            FocusScope.of(context).unfocus();
+            _showScheduleDialog(filteredRoutes[index]);
+          },
+        );
+      },
     );
   }
 
@@ -156,6 +353,7 @@ class _PublicTransportScreenState extends State<PublicTransportScreen> with Sing
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               CircleAvatar(
                 backgroundColor: color,
@@ -169,15 +367,18 @@ class _PublicTransportScreenState extends State<PublicTransportScreen> with Sing
                     Text(
                       title,
                       style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 4),
                     const Text(
                       'На всеки 15-20 минути',
                       style: TextStyle(color: Colors.grey),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
               ),
+              const SizedBox(width: 8),
               const Icon(Icons.arrow_forward_ios, size: 16),
             ],
           ),
@@ -203,11 +404,14 @@ class _PublicTransportScreenState extends State<PublicTransportScreen> with Sing
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    routeName,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+                  Expanded(
+                    child: Text(
+                      routeName,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   IconButton(
@@ -245,6 +449,8 @@ class _PublicTransportScreenState extends State<PublicTransportScreen> with Sing
               ElevatedButton(
                 onPressed: () {},
                 style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF006C35),
+                  foregroundColor: Colors.white,
                   minimumSize: const Size(double.infinity, 50),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -263,20 +469,46 @@ class _PublicTransportScreenState extends State<PublicTransportScreen> with Sing
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _buildTimeChip(time1),
-          _buildTimeChip(time2),
-          _buildTimeChip(time3),
+          Expanded(child: _buildTimeChip(time1)),
+          const SizedBox(width: 4),
+          Expanded(child: _buildTimeChip(time2)),
+          const SizedBox(width: 4),
+          Expanded(child: _buildTimeChip(time3)),
         ],
       ),
     );
   }
 
   Widget _buildTimeChip(String time) {
-    return Chip(
-      label: Text(time),
-      backgroundColor: Colors.grey[200],
+    return Container(
+      alignment: Alignment.center,
+      child: Chip(
+        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        label: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            time,
+            style: const TextStyle(fontSize: 13),
+          ),
+        ),
+        labelPadding: const EdgeInsets.symmetric(horizontal: 4.0),
+        backgroundColor: Colors.grey[200],
+        visualDensity: VisualDensity.compact,
+      ),
     );
+  }
+
+  void _hideSearch() {
+    if (_tabController.index == 0) {
+      setState(() {
+        _isBusSearching = false;
+      });
+    } else if (_tabController.index == 1) {
+      setState(() {
+        _isTrolleySearching = false;
+      });
+    }
+    FocusScope.of(context).unfocus();
   }
 } 

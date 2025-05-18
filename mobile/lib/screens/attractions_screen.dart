@@ -7,7 +7,7 @@ class AttractionsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Забележителности'),
+        title: const Text('Култура и туризъм'),
       ),
       body: ListView(
         children: [
